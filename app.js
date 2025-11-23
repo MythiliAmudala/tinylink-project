@@ -1,8 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
-
 const { Pool } = require('pg');
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -13,11 +13,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
 
-const indexRoutes = require('./routes/index');
-const apiRoutes = require('./routes/api');
+const indexRoutes = require('./routes/index')(pool);
+const apiRoutes = require('./routes/api')(pool);
 
 app.use('/', indexRoutes);
-app.use('/api', apiRoutes(pool));
+app.use('/api', apiRoutes);
 
-// ←←←←← NO app.listen() AT ALL ←←←←←
-module.exports = app;   // THIS LINE IS MANDATORY FOR VERCEL
+// ------------------------------
+// Local development ONLY
+// ------------------------------
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}
+
+// Export for Vercel
+module.exports = app;

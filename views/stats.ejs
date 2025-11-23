@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stats for <%= link.short_code %></title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header><h1>Stats for <%= link.short_code %></h1></header>
+  <main>
+    <p>Target URL: <%= link.target_url %></p>
+    <p>Total Clicks: <%= link.clicks %></p>
+    <p>Last Clicked: <%= link.last_clicked ? link.last_clicked.toLocaleString() : 'Never' %></p>
+  </main>
+</body>
+</html>
