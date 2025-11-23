@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyLink - URL Shortener</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>TinyLink</h1>
+    <p>Shorten URLs with style</p>
+  </header>
+
+  <% if (success) { %><div class="message success"><%= success %></div><% } %>
+  <% if (error) { %><div class="message error"><%= error %></div><% } %>
+
+  <div class="card">
+    <form id="createForm">
+      <div class="form-group">
+        <input type="url" name="target_url" placeholder="Paste your long URL here" required>
+        <input type="text" name="custom_code" placeholder="Custom code (optional)" pattern="[A-Za-z0-9]{6,8}" maxlength="8">
+        <button type="submit" class="btn">Shorten URL</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <input type="text" id="search" class="search-input" placeholder="Search links..." onkeyup="filterTable()">
+  </div>
+
+  <div class="table-container">
+    <div class="card">
+      <table id="linksTable">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Short URL</th>
+            <th>Target</th>
+            <th>Clicks</th>
+            <th>Last Click</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (links.length === 0) { %>
+            <tr><td colspan="6" class="empty-state">No links yet — create your first one!</td></tr>
+          <% } else { %>
+            <% links.forEach(link => { %>
+              <tr>
+                <td><strong><%= link.short_code %></strong></td>
+                <td><a href="<%= BASE_URL %>/<%= link.short_code %>" target="_blank" style="color:#667eea; text-decoration:none;"><%= BASE_URL %>/<%= link.short_code %></a></td>
+                <td class="truncate"><%= link.target_url %></td>
+                <td><strong><%= link.clicks %></strong></td>
+                <td><%= link.last_clicked ? new Date(link.last_clicked).toLocaleString() : '—' %></td>
+                <td>
+                  <button onclick="copyToClipboard('<%= link.short_code %>')" class="action-btn copy-btn">Copy</button>
+                  <button onclick="deleteLink('<%= link.short_code %>')" class="action-btn delete-btn">Delete</button>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Same JS as before — just cleaner
+  document.getElementById('createForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    const btn = e.target.querySelector('button');
+    btn.disabled = true; btn.textContent = 'Creating...';
+    try {
+      const res = await fetch('/api/links', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      location.reload();
+    } catch (err) { alert('Error: ' + err.message); }
+    finally { btn.disabled = false; btn.textContent = 'Shorten URL'; }
+  };
+
+  async function copyToClipboard(code) {
+    const url = `<%= BASE_URL %>/${code}`;
+    await navigator.clipboard.writeText(url);
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!'; btn.style.background = '#10b981';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1500);
+  }
+
+  async function deleteLink(code) {
+    if (confirm(`Delete ${code}?`)) {
+      await fetch(`/api/links/${code}`, {method: 'DELETE'});
+      location.reload();
+    }
+  }
+
+  function filterTable() {
+    const term = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('#linksTable tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+  }
+</script>
+
+</body>
+</html>
